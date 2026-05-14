@@ -3,6 +3,19 @@ const app = express();
 app.use(express.json());
 let tasks = [];
 
+// Assigned list
+
+const assignedList = ['Javier', 'Andrea', 'Carlos', 'Maria'];
+
+// Weight list
+
+const weight = {
+    0: 'Unknown',
+    1: 'Low',
+    2: 'Medium',
+    3: 'High'
+};
+
 // GET
 
 app.get('/tasks', (req, res) => {
@@ -12,10 +25,9 @@ app.get('/tasks', (req, res) => {
 // GET by ID
 
 app.get('/tasks/:id', (req, res) => {
-    // to find a single id
-    const searchID = req.params.id;
+    const searchID = req.params.id;     // to find a single id
     const task = tasks.find(t => t.id == searchID);
-    // if there are no tasks, then nothing
+    if (!task) return res.status(404).json({ mensaje: 'Task not found' }); // if there is no task, send 404
     res.json(task);
 });
 
@@ -24,90 +36,76 @@ app.get('/tasks/:id', (req, res) => {
 app.post('/tasks', (req, res) => {
     // this one is for current time
     const currentTime = new Date().toISOString();
-    // instead of manually typing it, just made it 1 2 or 3, prob ill make a condition to make it if >3, just use 3
-    const weight = {
-        0: 'Unknown',
-        1: 'Low',
-        2: 'Medium',
-        3: 'High'
-    };
-    const nueva = {id: Date.now(), 
-        title: req.body.title, 
-        RegistryTime: currentTime, 
-        weight: weight[req.body.weight] || weight[0], 
+
+    if (!assignedList.includes(req.body.assigned)) {
+        return res.status(400).json({ mensaje: 'Assigned must be: ' + assignedList.join(', ') });
+    }
+
+    const nueva = {
+        id: Date.now(),
+        title: req.body.title,
+        RegistryTime: currentTime,
+        weight: weight[req.body.weight] || weight[0],
         description: req.body.description,
-        assigned: req.body.assigned || false // this is to prevent it from being undefined
+        assigned: req.body.assigned
     };
     tasks.push(nueva);
     res.status(201).json(nueva);
 });
 
-// POST BATCH -- FIX PLS
-/*
-app.post('/tasks', (req, res) => {
-    // this one is for current time
+// POST BATCH
+
+app.post('/tasks/batch', (req, res) => {
+    if (!Array.isArray(req.body)) {
+        return res.status(400).json({ mensaje: 'Body must be an array' });
+    }
+
     const currentTime = new Date().toISOString();
-    // instead of manually typing it, just made it 1 2 or 3, prob ill make a condition to make it if >3, just use 3
-    const weight = {
-        0: 'Unknown',
-        1: 'Low',
-        2: 'Medium',
-        3: 'High'
-    };
+
+    const invalidAssigned = req.body.find(task => !assignedList.includes(task.assigned));
+    if (invalidAssigned) {
+        return res.status(400).json({ mensaje: 'Assigned must be: ' + assignedList.join(', ') });
+    }
+
     const nuevas = req.body.map((task, index) => ({
         id: Date.now() + index, // added this so that ids dont repeat on batch
         title: task.title,
         RegistryTime: currentTime,
         weight: weight[task.weight] || weight[0],
         description: task.description,
-        assigned: task.assigned || false // this is to prevent it from being undefined
+        assigned: task.assigned
     }));
+
     tasks.push(...nuevas);
     res.status(201).json(nuevas);
-    });
-
- to do batch post, do this
-[
-    {
-    "title":"2839u8293",
-    "weight":4,
-    "description":"Just Dance3",
-    "assigned":true
-    },
-    {
-    "title":"2839u8293",
-    "weight":4,
-    "description":"Just Dance3",
-    "assigned":true
-    }
-]
-    */ 
-
+});
 
 // PUT
 
 app.put('/tasks/:id', (req, res) => {
     const task = tasks.find(t => t.id == req.params.id);
-    if(!task) return res.status(404).json({mensaje: 'Task not found'});
-    task.title = req.body.title;
-    task.weight = req.body.weight;
-    task.description = req.body.description;
-    task.assigned = req.body.assigned || false;
+    if (!task) return res.status(404).json({ mensaje: 'Task not found' });
+
+    if (req.body.assigned && !assignedList.includes(req.body.assigned)) {
+        return res.status(400).json({ mensaje: 'Assigned must be: ' + assignedList.join(', ') });
+    }
+
+    task.title = req.body.title || task.title;
+    task.weight = weight[req.body.weight] || task.weight;
+    task.description = req.body.description || task.description;
+    task.assigned = req.body.assigned || task.assigned;
     res.json(task);
-});
-
-// DELETE
-
-app.delete('/tasks/:id', (req, res) => {
-    tasks = tasks.filter(t => t.id != req.params.id);
-    res.status(204).send();
 });
 
 // DELETE Batch
 
-app.delete('/tasks',(req,res)=> {
-    const idsDelete = req.body.map(t=> t.id);
-    tasks = tasks.filter(t=> !idsDelete.includes(t.id));
+app.delete('/tasks/batch', (req, res) => {
+    if (!Array.isArray(req.body)) {
+        return res.status(400).json({ mensaje: 'Body must be an array' });
+    }
+
+    const idsDelete = req.body.map(t => t.id);
+    tasks = tasks.filter(t => !idsDelete.includes(t.id));
     res.status(204).send();
     // how to do batch delete, put the JSON like this
     /*
@@ -116,6 +114,16 @@ app.delete('/tasks',(req,res)=> {
     {"id":1778265538288}
     ]
     */
+});
+
+// DELETE
+
+app.delete('/tasks/:id', (req, res) => {
+    const task = tasks.find(t => t.id == req.params.id);
+    if (!task) return res.status(404).json({ mensaje: 'Task not found' });
+
+    tasks = tasks.filter(t => t.id != req.params.id);
+    res.status(204).send();
 });
 
 // PORT
