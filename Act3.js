@@ -64,7 +64,7 @@ const validateTransition = (estadoActual, nuevoEstado) => {
     return { ok: true };
 };
 
-//  ENDPOINTS (retrocompatibles con Act1 y Act2)
+//  ENDPOINTS (Act1 y Act2)
 
 // ── GET /tasks — filtros + orden + paginación (Act2) ─────────
 app.get('/tasks', (req, res) => {
@@ -255,9 +255,6 @@ app.delete('/tasks/:id/comments/:commentId', (req, res) => {
     task.comments = task.comments.filter(c => c.id != req.params.commentId);
     res.status(204).send();
 });
-
-
-
 
 // GET /v2/tasks
 app.get('/v2/tasks', (req, res) => {

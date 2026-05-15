@@ -37,8 +37,8 @@ function getWeightValue(taskWeight) {
 app.get('/tasks', (req, res) => {
     const assigned = req.query.assigned;
     const weightQuery = req.query.weight;
-    const startDate = req.query.startDate; //query param rango de fechas (start)
-    const endDate = req.query.endDate; // query param rango de fechas (end)
+    const startDate = req.query.startDate; //query start
+    const endDate = req.query.endDate; // query end
 
     const sortBy = req.query.sortBy; // query param para ordenar 
     const sortOrder = (req.query.sortOrder || req.query.order || 'asc').toLowerCase(); // asc
@@ -62,7 +62,7 @@ app.get('/tasks', (req, res) => {
         );
     }
 
-    // logica de ordenamiento
+    // logica para ordenar
     if (sortBy) {
         filteredTasks = filteredTasks.sort((a, b) => {
             if (sortBy == 'weight') {
